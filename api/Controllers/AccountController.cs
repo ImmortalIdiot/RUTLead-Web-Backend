@@ -13,17 +13,24 @@ namespace api.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly ApiDBContext _dbContext;
-        private readonly ITokenService _tokenService;
-        private readonly IStudentRepository _studentManager;
-        private readonly IPasswordHasher<Student> _passwordHasher;
+        private readonly ApiDBContext dbContext;
+        private readonly ITokenService tokenService;
+        private readonly IStudentRepository studentManager;
+        private readonly IPasswordHasher<Student> passwordHasher;
+        private readonly ILogger<AccountController> logger;
 
-        public AccountController(ITokenService tokenService, IPasswordHasher<Student> passwordHasher, IStudentRepository studentManager, ApiDBContext dbContext)
+        public AccountController(
+            ITokenService tokenService, 
+            IPasswordHasher<Student> passwordHasher, 
+            IStudentRepository studentManager, 
+            ApiDBContext dbContext, 
+            ILogger<AccountController> logger)
         {
-            _tokenService = tokenService;
-            _passwordHasher = passwordHasher;
-            _studentManager = studentManager;
-            _dbContext = dbContext;
+            this.tokenService = tokenService;
+            this.passwordHasher = passwordHasher;
+            this.studentManager = studentManager;
+            this.dbContext = dbContext;
+            this.logger = logger;
         }
 
         [HttpPost("login")]
@@ -33,11 +40,13 @@ namespace api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var user = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
+            logger.LogInformation($"Attempt to login of user {loginDto.StudentId}");
+
+            var user = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
 
             if (user == null) return NotFound("Incorrect student ID number");
 
-            var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
+            var isPasswordHashValid = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
             if (isPasswordHashValid != PasswordVerificationResult.Success) return NotFound("Incorrect username or password");
 
@@ -46,7 +55,7 @@ namespace api.Controllers
                     new UserDto
                     {
                         StudentId = user.StudentId,
-                        Token = _tokenService.CreateToken(user)
+                        Token = tokenService.CreateToken(user)
                     }
                 );
             } catch (Exception e) {
@@ -62,14 +71,16 @@ namespace api.Controllers
                 if (!ModelState.IsValid) {
                     return BadRequest(ModelState);
                 }   
-
-                var existingStudent = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
+                
+                logger.LogInformation($"Attempt to register the user {registerDto.StudentId}");
+                
+                var existingStudent = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
                 if (existingStudent != null) {
                     return BadRequest("Such a user already exists");
                 }
 
-                var passwordHash = _passwordHasher.HashPassword(null!, registerDto.Password);
+                var passwordHash = passwordHasher.HashPassword(null!, registerDto.Password);
 
                 var student = new Student
                 {
@@ -81,7 +92,7 @@ namespace api.Controllers
                     Role = Roles.Student
                 };
 
-                var createdUser = await _studentManager.CreateAsync(student);
+                var createdUser = await studentManager.CreateAsync(student);
                 
                 return Ok(
                     new NewUserDto
@@ -90,7 +101,7 @@ namespace api.Controllers
                         Group = registerDto.Group,
                         FullName = registerDto.FullName,
                         Email = registerDto.Email,
-                        Token = _tokenService.CreateToken(student)
+                        Token = tokenService.CreateToken(student)
                     }
                 );
             } catch (Exception e)
