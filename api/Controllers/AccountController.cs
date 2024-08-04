@@ -40,7 +40,7 @@ namespace api.Controllers
                 return BadRequest(ModelState);
             }
 
-            logger.LogInformation($"Attempt to login of user {loginDto.StudentId}");
+            logger.LogInformation($"Attempt to login a user {loginDto.StudentId}");
 
             var user = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
 
@@ -81,12 +81,12 @@ namespace api.Controllers
                     return BadRequest(ModelState);
                 }   
                 
-                logger.LogInformation($"Attempt to register the user {registerDto.StudentId}");
+                logger.LogInformation($"Attempt to register a user {registerDto.StudentId}");
                 
                 var existingStudent = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
                 if (existingStudent != null) {
-                    logger.LogWarning("Attempt to register of existing user");
+                    logger.LogWarning("Attempt to register an existing user");
                     return BadRequest("Such a user already exists");
                 }
 

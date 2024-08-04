@@ -11,19 +11,24 @@ namespace api.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly ApiDBContext _context;
-        private readonly IStudentRepository _studentRepo;
+        private readonly ApiDBContext context;
+        private readonly IStudentRepository studentRepo;
+        private readonly ILogger<StudentController> logger;
 
-        public StudentController(ApiDBContext context, IStudentRepository studentRepo)
+        public StudentController(ApiDBContext context, IStudentRepository studentRepo, ILogger<StudentController> logger)
         {
-            _studentRepo = studentRepo;
-            _context = context;
+            this.studentRepo = studentRepo;
+            this.context = context;
+            this.logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] QueryObject queryObject)
         {
-            var students = await _studentRepo.GetAllAsync(queryObject);
+
+            logger.LogInformation("Get all students");
+
+            var students = await studentRepo.GetAllAsync(queryObject);
 
             var studentDto = students.Select(s => s.ToStudentDto());
 
@@ -33,13 +38,16 @@ namespace api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var student = await _studentRepo.GetByIdAsync(id);
+
+            logger.LogInformation($"Get student with {id}ID");
+            var student = await studentRepo.GetByIdAsync(id);
 
             if (student == null)
-            {
+            { 
+                logger.LogWarning($"Student with {id}ID doesn't exist");
                 return NotFound();
             }
-
+            logger.LogInformation($"Successful login for {id}ID");
             return Ok(student.ToStudentDto());
         }
 
@@ -47,7 +55,7 @@ namespace api.Controllers
         public async Task<IActionResult> Create([FromBody] CreateStudentRequestDto studentDto)
         {
             var studentModel = studentDto.ToStudentFromCreate();
-            await _studentRepo.CreateAsync(studentModel);
+            await studentRepo.CreateAsync(studentModel);
             return CreatedAtAction(nameof(GetById), new {id = studentModel.StudentId}, studentModel.ToStudentDto());
         }
 
@@ -55,13 +63,15 @@ namespace api.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStudentRequestDto updateDto)
         {
-            var studentModel = await _studentRepo.UpdateAsync(id, updateDto);
+            logger.LogInformation($"Update student {updateDto.StudentId}");
+            var studentModel = await studentRepo.UpdateAsync(id, updateDto);
 
             if (studentModel == null)
             {
+                logger.LogWarning($"Fail to update, student {updateDto.StudentId} doesn't exist");
                 return NotFound();
             }
-
+            logger.LogInformation($"Successful update for {updateDto.StudentId}");
             return Ok(studentModel.ToStudentDto());
         }
 
@@ -69,13 +79,15 @@ namespace api.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var studentModel = await _studentRepo.DeleteAsync(id);
+            logger.LogInformation($"Delete student {id}");
+            var studentModel = await studentRepo.DeleteAsync(id);
 
             if (studentModel == null)
             {
+                logger.LogWarning($"Delete fail, student {id} doesn't exist");
                 return NotFound();
             }
-
+            logger.LogInformation($"Remove student {id}");
             return NoContent();
         }
     }
