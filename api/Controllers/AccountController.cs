@@ -44,11 +44,19 @@ namespace api.Controllers
 
             var user = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
 
-            if (user == null) return NotFound("Incorrect student ID number");
+            if (user == null)
+            {
+                logger.LogWarning("User not found");
+                return NotFound("Incorrect student ID number");
+            }
 
             var isPasswordHashValid = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
-            if (isPasswordHashValid != PasswordVerificationResult.Success) return NotFound("Incorrect username or password");
+            if (isPasswordHashValid != PasswordVerificationResult.Success)
+            {
+                logger.LogWarning("Fail to login user (password or username is incorrect)");
+                return NotFound("Incorrect username or password");
+            }
 
             try {
                 return Ok(
@@ -59,6 +67,7 @@ namespace api.Controllers
                     }
                 );
             } catch (Exception e) {
+                logger.LogError($"Thrown an exception for user {loginDto.StudentId} during login");
                 return BadRequest(e.Message);
             }
         }
@@ -77,6 +86,7 @@ namespace api.Controllers
                 var existingStudent = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
                 if (existingStudent != null) {
+                    logger.LogWarning("Attempt to register of existing user");
                     return BadRequest("Such a user already exists");
                 }
 
@@ -106,6 +116,7 @@ namespace api.Controllers
                 );
             } catch (Exception e)
             {
+                logger.LogError($"Thrown an exception for user {registerDto.StudentId} during register");
                 return BadRequest(e.Message);
             }
         }
