@@ -59,6 +59,7 @@ namespace api.Controllers
             }
 
             try {
+                logger.LogInformation($"Successful login for studentId {loginDto.StudentId}");
                 return Ok(
                     new UserDto
                     {
@@ -103,7 +104,9 @@ namespace api.Controllers
                 };
 
                 var createdUser = await studentManager.CreateAsync(student);
-                
+
+                logger.LogInformation($"Successful register for studentId{registerDto.StudentId}");
+
                 return Ok(
                     new NewUserDto
                     {
