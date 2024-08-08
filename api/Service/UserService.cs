@@ -26,11 +26,11 @@ public class UserService : IUserService
     {
         var user = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
 
-        if (user == null) throw new NotFoundException("There is no user with this ID");
+        if (user == null) throw new NotFoundException("Пользователя с таким ID не существует");
 
         var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
-        if (isPasswordHashValid != PasswordVerificationResult.Success) throw new InvalidUserDataException("Incorrect username or password");
+        if (isPasswordHashValid != PasswordVerificationResult.Success) throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
 
         return new UserDto {
             StudentId = user.StudentId,
@@ -43,7 +43,7 @@ public class UserService : IUserService
         var existingStudent = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
         if (existingStudent != null) {
-            throw new UserAlreadyExistsException("Such a user already exists");
+            throw new UserAlreadyExistsException("Пользователь с таким ID уже существует");
         }
 
         var passwordHash = _passwordHasher.HashPassword(null!, registerDto.Password);

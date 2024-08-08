@@ -9,15 +9,15 @@ namespace api.DataAnnotations
         {
             var passwordString = password != null ? password.ToString() : null;
 
-            if (string.IsNullOrWhiteSpace(passwordString) || passwordString.Length < 6) return new ValidationResult("Password length must be at least 6 characters");
+            if (string.IsNullOrWhiteSpace(passwordString) || passwordString.Length < 6) return new ValidationResult("Пароль должен содержать не менее 6 символов");
 
-            if (!passwordString.Any(char.IsDigit)) return new ValidationResult("The password must have at least 1 digit");
+            if (!passwordString.Any(char.IsDigit)) return new ValidationResult("Пароль должен содержать хотя бы одну цифру");
 
-            if (!Regex.IsMatch(passwordString, @"[!@#$%^&*()_+}{'?/><|~`]")) return new ValidationResult("Password must have at least one non alphanumeric character");
+            if (!Regex.IsMatch(passwordString, @"[!@#$%^&*()_+}{'?/><|~`]")) return new ValidationResult("Пароль должен содержать хотя бы один специальный символ");
 
-            if (!passwordString.Any(ch => char.IsLower(ch) && ch >= 'a' && ch <= 'z')) return new ValidationResult("Password must have at least one lowercase ('a'-'z')");
+            if (!passwordString.Any(ch => char.IsLower(ch) && ch >= 'a' && ch <= 'z')) return new ValidationResult("Пароль должен содержать хотя бы одну строчную букву ('a'-'z')");
 
-            if (!passwordString.Any(ch => char.IsUpper(ch) && ch >= 'A' && ch <= 'Z')) return new ValidationResult(" Password must have at least one uppercase ('A'-'Z')");
+            if (!passwordString.Any(ch => char.IsUpper(ch) && ch >= 'A' && ch <= 'Z')) return new ValidationResult("Пароль должен содержать хотя бы одну заглавную букву ('A'-'Z')");
 
             return ValidationResult.Success;
         }

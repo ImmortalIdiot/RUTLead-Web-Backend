@@ -8,7 +8,7 @@ namespace api.DataAnnotations
         {
             var studentIdString = studentId != null ? studentId.ToString() : null;
 
-            if (string.IsNullOrWhiteSpace(studentIdString) || studentIdString.Length != 8) return new ValidationResult("The student ID must be exactly 8 characters long");
+            if (string.IsNullOrWhiteSpace(studentIdString) || studentIdString.Length != 8) return new ValidationResult("Номер студенческого билета должен содержать ровно 8 символов");
 
             return ValidationResult.Success;
         }
