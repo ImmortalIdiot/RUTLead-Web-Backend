@@ -3,10 +3,10 @@ using api.Interfaces;
 using api.Middleware;
 using api.Models;
 using api.Service;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using api.Repository;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -13,13 +13,16 @@ public class UserService : IUserService
     private readonly IPasswordHasher<Student> _passwordHasher;
     private readonly IStudentRepository _studentManager;
     private readonly ITokenService _tokenService;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(ApiDBContext dbContext, IPasswordHasher<Student> passwordHasher, IStudentRepository studentManager, ITokenService tokenService)
+
+    public UserService(ApiDBContext dbContext, IPasswordHasher<Student> passwordHasher, IStudentRepository studentManager, ITokenService tokenService, ILogger<UserService> logger)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _studentManager = studentManager;
         _tokenService = tokenService;
+        _logger = logger;
     }
 
     public async Task<UserDto> LoginAsync(LoginDto loginDto)
@@ -30,7 +33,10 @@ public class UserService : IUserService
 
         var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
-        if (isPasswordHashValid != PasswordVerificationResult.Success) throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
+        if (isPasswordHashValid != PasswordVerificationResult.Success) {
+            _logger.LogWarning("Fail to login user (password or username is incorrect)");
+            throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
+        }
 
         return new UserDto {
             StudentId = user.StudentId,
@@ -43,6 +49,7 @@ public class UserService : IUserService
         var existingStudent = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
         if (existingStudent != null) {
+            _logger.LogWarning("Attempt to register an existing user");
             throw new UserAlreadyExistsException("Пользователь с таким ID уже существует");
         }
 
@@ -67,5 +74,4 @@ public class UserService : IUserService
             Token = _tokenService.CreateToken(student)
         };
     }
-
 }
