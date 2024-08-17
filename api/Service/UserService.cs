@@ -29,16 +29,18 @@ public class UserService : IUserService
     {
         var user = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
 
-        if (user == null) throw new NotFoundException("Пользователя с таким ID не существует");
+        if (user == null) throw new UserNotFoundException("Пользователя с таким ID не существует");
 
         var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
-        if (isPasswordHashValid != PasswordVerificationResult.Success) {
+        if (isPasswordHashValid != PasswordVerificationResult.Success)
+        {
             _logger.LogWarning("Fail to login user (password or username is incorrect)");
             throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
         }
 
-        return new UserDto {
+        return new UserDto
+        {
             StudentId = user.StudentId,
             Token = _tokenService.CreateToken(user)
         };
@@ -48,14 +50,16 @@ public class UserService : IUserService
     {
         var existingStudent = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
 
-        if (existingStudent != null) {
+        if (existingStudent != null)
+        {
             _logger.LogWarning("Attempt to register an existing user");
             throw new UserAlreadyExistsException("Пользователь с таким ID уже существует");
         }
 
         var passwordHash = _passwordHasher.HashPassword(null!, registerDto.Password);
 
-        var student = new Student {
+        var student = new Student
+        {
             StudentId = registerDto.StudentId,
             Group = registerDto.Group,
             FullName = registerDto.FullName,
@@ -66,7 +70,8 @@ public class UserService : IUserService
 
         await _studentManager.CreateAsync(student);
 
-        return new NewUserDto {
+        return new NewUserDto
+        {
             StudentId = registerDto.StudentId,
             Group = registerDto.Group,
             FullName = registerDto.FullName,

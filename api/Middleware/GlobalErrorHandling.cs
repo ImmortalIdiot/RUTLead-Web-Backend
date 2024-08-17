@@ -12,10 +12,12 @@ namespace api.Middleware
         {
             try
             {
+                _logger.LogInformation($"Request URL: {Microsoft.AspNetCore.Http.Extensions.UriHelper.GetDisplayUrl(context.Request)}");
                 await next(context);
             }
             catch (Exception e)
             {
+                _logger.LogError(e, "An unhandled exception occurred.");
                 context.Response.StatusCode = (int)ExceptionCodesDictionary.GetExceptionStatusCode(e);
                 await context.Response.WriteAsync(e.Message);
             }

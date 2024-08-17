@@ -6,7 +6,6 @@ using api.Exceptions;
 namespace api.Controllers
 {
     [Route("api/account")]
-    [ApiController]
     public class AccountController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -24,31 +23,33 @@ namespace api.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
+                var firstErrorMessage = ModelState
+                    .SelectMany(ms => ms.Value.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .LastOrDefault();
+                
+                _logger.LogInformation($"ModelState is invalid. Error: {firstErrorMessage}");
+                throw new InvalidUserDataException(firstErrorMessage!);
             }
 
-            try {
-                _logger.LogInformation($"Attempt to login a user {loginDto.StudentId}");
-                var user = await _userService.LoginAsync(loginDto);
-                _logger.LogInformation($"Successful login for studentId {loginDto.StudentId}");
-                return Ok(user);
-            }
-            catch (NotFoundException e)
-            {
-                _logger.LogWarning("User not found");
-                return NotFound(e.Message);
-            }
-            catch (Exception e) {
-                _logger.LogError($"Thrown an exception for user {loginDto.StudentId} during login");
-                return BadRequest(e.Message);
-            }
+            _logger.LogInformation($"Attempt to login a user {loginDto.StudentId}");
+            var user = await _userService.LoginAsync(loginDto);
+            _logger.LogInformation($"Successful login for studentId {loginDto.StudentId}");
+            return Ok(user);
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
             if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
+                _logger.LogInformation($" {registerDto.StudentId}");
+                var firstErrorMessage = ModelState
+                    .SelectMany(ms => ms.Value.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .LastOrDefault();
+
+                _logger.LogInformation($"ModelState is invalid. Error: {firstErrorMessage}");
+                throw new InvalidUserDataException(firstErrorMessage!);
             }
             try {
                 _logger.LogInformation($"Attempt to register a user {registerDto.StudentId}");
