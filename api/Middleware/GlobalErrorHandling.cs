@@ -12,7 +12,7 @@ namespace api.Middleware
                 logger.LogInformation("Request URL: {url}", Microsoft.AspNetCore.Http.Extensions.UriHelper.GetDisplayUrl(context.Request));
                 await next(context);
             }
-            catch (Exception e) when (e is InvalidUserDataException or UserNotFoundException)
+            catch (Exception e) when (e is InvalidUserDataException or UserNotFoundException or UserAlreadyExistsException)
             {
                 logger.LogError(e, "A validation exception was thrown");
 
