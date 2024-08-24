@@ -25,7 +25,7 @@ public class TokenService : ITokenService {
             new Claim(JwtRegisteredClaimNames.NameId, user.StudentId.ToString())
         };
 
-        if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(user.FullName)) {
+        if (!string.IsNullOrEmpty(user.Group) && !string.IsNullOrEmpty(user.FullName)) {
             claims.Add(new Claim("group", user.Group));
             claims.Add(new Claim(JwtRegisteredClaimNames.GivenName, user.FullName));
         } else {
