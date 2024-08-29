@@ -11,43 +11,41 @@ namespace api.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly ApiDBContext context;
-        private readonly IStudentRepository studentRepo;
-        private readonly ILogger<StudentController> logger;
+        private readonly IStudentRepository _studentRepo;
+        private readonly ILogger<StudentController> _logger;
 
-        public StudentController(ApiDBContext context, IStudentRepository studentRepo, ILogger<StudentController> logger)
+        public StudentController(IStudentRepository studentRepo, ILogger<StudentController> logger)
         {
-            this.studentRepo = studentRepo;
-            this.context = context;
-            this.logger = logger;
+            _studentRepo = studentRepo;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] QueryObject queryObject)
         {
 
-            logger.LogInformation("Get all students");
+            _logger.LogInformation("Get all students");
 
-            var students = await studentRepo.GetAllAsync(queryObject);
+            var students = await _studentRepo.GetAllAsync(queryObject);
 
             var studentDto = students.Select(s => s.ToStudentDto());
 
             return Ok(students);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
 
-            logger.LogInformation($"Get student with {id}ID");
-            var student = await studentRepo.GetByIdAsync(id);
+            _logger.LogInformation("Get student with {id} ID", id);
+            var student = await _studentRepo.GetByIdAsync(id);
 
             if (student == null)
             { 
-                logger.LogWarning($"Student with {id}ID doesn't exist");
+                _logger.LogWarning("Student with {id} ID doesn't exist", id);
                 return NotFound();
             }
-            logger.LogInformation($"Successful login for {id}ID");
+            _logger.LogInformation("Successful login for {id} ID", id);
             return Ok(student.ToStudentDto());
         }
 
@@ -55,39 +53,39 @@ namespace api.Controllers
         public async Task<IActionResult> Create([FromBody] CreateStudentRequestDto studentDto)
         {
             var studentModel = studentDto.ToStudentFromCreate();
-            await studentRepo.CreateAsync(studentModel);
+            await _studentRepo.CreateAsync(studentModel);
             return CreatedAtAction(nameof(GetById), new {id = studentModel.StudentId}, studentModel.ToStudentDto());
         }
 
         [HttpPut]
-        [Route("{id}")]
+        [Route("{id:int}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStudentRequestDto updateDto)
         {
-            logger.LogInformation($"Update student {updateDto.StudentId}");
-            var studentModel = await studentRepo.UpdateAsync(id, updateDto);
+            _logger.LogInformation("Update student {updateDto.StudentId}", updateDto.StudentId);
+            var studentModel = await _studentRepo.UpdateAsync(id, updateDto);
 
             if (studentModel == null)
             {
-                logger.LogWarning($"Fail to update, student {updateDto.StudentId} doesn't exist");
+                _logger.LogWarning("Fail to update, student {updateDto.StudentId} doesn't exist", updateDto.StudentId);
                 return NotFound();
             }
-            logger.LogInformation($"Successful update for {updateDto.StudentId}");
+            _logger.LogInformation("Successful update for {updateDto.StudentId}", updateDto.StudentId);
             return Ok(studentModel.ToStudentDto());
         }
 
         [HttpDelete]
-        [Route("{id}")]
+        [Route("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            logger.LogInformation($"Delete student {id}");
-            var studentModel = await studentRepo.DeleteAsync(id);
+            _logger.LogInformation("Delete student {id}", id);
+            var studentModel = await _studentRepo.DeleteAsync(id);
 
             if (studentModel == null)
             {
-                logger.LogWarning($"Delete fail, student {id} doesn't exist");
+                _logger.LogWarning("Delete fail, student {id} doesn't exist", id);
                 return NotFound();
             }
-            logger.LogInformation($"Remove student {id}");
+            _logger.LogInformation("Remove student {id}", id);
             return NoContent();
         }
     }

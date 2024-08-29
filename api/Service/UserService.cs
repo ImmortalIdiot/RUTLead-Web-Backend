@@ -1,54 +1,62 @@
+using api.Data;
+using api.Dto.Account;
+using api.Enums;
+using api.Exceptions;
 using api.Interfaces;
 using api.Models;
-using api.Data;
-using api.Enums;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using api.Dto.Account;
-using api.Exceptions;
+using Microsoft.EntityFrameworkCore;
+
+namespace api.Service;
 
 public class UserService : IUserService
 {
     private readonly ApiDBContext _dbContext;
     private readonly IPasswordHasher<Student> _passwordHasher;
-    private readonly IStudentRepository _studentManager;
+    private readonly IStudentRepository _studentRepo;
     private readonly ITokenService _tokenService;
     private readonly ILogger<UserService> _logger;
 
-
-    public UserService(ApiDBContext dbContext, IPasswordHasher<Student> passwordHasher, IStudentRepository studentManager, ITokenService tokenService, ILogger<UserService> logger)
+    public UserService(ApiDBContext dbContext,
+        IPasswordHasher<Student> passwordHasher,
+        IStudentRepository studentRepo,
+        ITokenService tokenService,
+        ILogger<UserService> logger)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
-        _studentManager = studentManager;
+        _studentRepo = studentRepo;
         _tokenService = tokenService;
         _logger = logger;
     }
 
     public async Task<UserDto> LoginAsync(LoginDto loginDto)
     {
-        var user = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
+        var user = await _studentRepo.GetByIdAsync(loginDto.StudentId);
 
-        if (user == null) throw new UserNotFoundException("Пользователя с таким ID не существует");
+        if (user == null)
+        {
+            _logger.LogWarning("User with ID {Id} was not found.", loginDto.StudentId);
+            throw new UserNotFoundException("Пользователя с таким ID не существует");
+        }
 
         var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
 
-        if (isPasswordHashValid != PasswordVerificationResult.Success)
-        {
-            _logger.LogWarning("Fail to login user (password or username is incorrect)");
-            throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
-        }
+        if (isPasswordHashValid == PasswordVerificationResult.Success)
+            return new UserDto
+            {
+                StudentId = user.StudentId,
+                Token = _tokenService.CreateToken(user)
+            };
+        
+        _logger.LogWarning("Fail to login user (password or username is incorrect)");
+        throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
 
-        return new UserDto
-        {
-            StudentId = user.StudentId,
-            Token = _tokenService.CreateToken(user)
-        };
     }
 
     public async Task<NewUserDto> RegisterAsync(RegisterDto registerDto)
     {
-        var existingStudent = await _dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
+        var existingStudent = await _studentRepo.GetByIdAsync(registerDto.StudentId);
 
         if (existingStudent != null)
         {
@@ -68,7 +76,7 @@ public class UserService : IUserService
             Role = Roles.Student
         };
 
-        await _studentManager.CreateAsync(student);
+        await _studentRepo.CreateAsync(student);
 
         return new NewUserDto
         {

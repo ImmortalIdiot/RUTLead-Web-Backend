@@ -30,7 +30,6 @@ builder.Services.AddLogging(config =>
 });
 
 builder.Services.AddTransient<GlobalErrorHandling>();
-builder.Services.AddTransient<ValidationErrorHandling>();
 
 builder.Services.AddDbContext<ApiDBContext>(options =>
 {
@@ -100,7 +99,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<GlobalErrorHandling>();
-app.UseMiddleware<ValidationErrorHandling>();
 
 app.UseHttpsRedirection();
 
