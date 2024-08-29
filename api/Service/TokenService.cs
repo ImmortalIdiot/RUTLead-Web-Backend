@@ -27,14 +27,14 @@ public class TokenService : ITokenService {
         _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
     }
 
-    public string CreateToken(Student user)
+    public string CreateToken(int studentId, string fullName, string group)
     {
-        _logger.LogInformation("Starting token creation for student with ID: {StudentId}.", user.StudentId);
+        _logger.LogInformation("Starting token creation for student with ID: {StudentId}.", studentId);
 
         var claims = new List<Claim> {
-            new ("studentId", user.StudentId.ToString()),
-            new ("group", user.Group),
-            new ("fullName", user.FullName)
+            new ("studentId", studentId.ToString()),
+            new ("fullName", fullName),
+            new ("group", group)
         };
 
         try
@@ -53,13 +53,13 @@ public class TokenService : ITokenService {
 
             var tokenHandler = new JwtSecurityTokenHandler();
             
-            _logger.LogInformation("Creating JWT for student with ID: {StudentId}.", user.StudentId);
+            _logger.LogInformation("Creating JWT for student with ID: {StudentId}.", studentId);
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            _logger.LogInformation("Token creation successful for student with ID: {StudentId}.", user.StudentId);
+            _logger.LogInformation("Token creation successful for student with ID: {StudentId}.", studentId);
             return tokenHandler.WriteToken(token);
         } catch (Exception ex) {
-            _logger.LogError(ex, "Error occurred while creating token for student with ID: {StudentId}.", user.StudentId);
+            _logger.LogError(ex, "Error occurred while creating token for student with ID: {StudentId}.", studentId);
             throw new InvalidJwtDataException("Token creation error");
         }
     }

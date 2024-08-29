@@ -4,6 +4,7 @@ using api.Enums;
 using api.Exceptions;
 using api.Interfaces;
 using api.Models;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 
 namespace api.Service;
@@ -26,31 +27,28 @@ public class AuthenticationService : IAuthenticationService
         _logger = logger;
     }
 
-    public async Task<UserDto> LoginAsync(LoginDto loginDto)
+    public async Task<string> LoginAsync(LoginDto loginDto)
     {
-        var user = await _studentRepo.GetByIdAsync(loginDto.StudentId);
+        var student = await _studentRepo.GetByIdAsync(loginDto.StudentId);
 
-        if (user == null)
+        if (student == null)
         {
             _logger.LogWarning("User with ID {Id} was not found.", loginDto.StudentId);
             throw new UserNotFoundException("Пользователя с таким ID не существует");
         }
 
-        var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
+        var isPasswordHashValid = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, loginDto.Password);
 
-        if (isPasswordHashValid == PasswordVerificationResult.Success)
-            return new UserDto
-            {
-                StudentId = user.StudentId,
-                Token = _tokenService.CreateToken(user)
-            };
-        
-        _logger.LogWarning("Fail to login user (password or username is incorrect)");
-        throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
+        if (isPasswordHashValid != PasswordVerificationResult.Success)
+        {
+            _logger.LogWarning("Fail to login user (password or username is incorrect)");
+            throw new InvalidUserDataException("Некорректное имя пользователя или пароль");
+        }
 
+        return _tokenService.CreateToken(student.StudentId, student.FullName, student.Group);
     }
 
-    public async Task<NewUserDto> RegisterAsync(RegisterDto registerDto)
+    public async Task<Tokens> RegisterAsync(RegisterDto registerDto)
     {
         var existingStudent = await _studentRepo.GetByIdAsync(registerDto.StudentId);
 
@@ -72,15 +70,14 @@ public class AuthenticationService : IAuthenticationService
             Role = Roles.Student
         };
 
+        var refreshToken = _tokenService.CreateRefreshToken();
+        
         await _studentRepo.CreateAsync(student);
 
-        return new NewUserDto
+        return new Tokens
         {
-            StudentId = registerDto.StudentId,
-            Group = registerDto.Group,
-            FullName = registerDto.FullName,
-            Email = registerDto.Email,
-            Token = _tokenService.CreateToken(student)
+            AccessToken = _tokenService.CreateToken(student.StudentId, student.FullName, student.Group),
+            RefreshToken = refreshToken
         };
     }
 }

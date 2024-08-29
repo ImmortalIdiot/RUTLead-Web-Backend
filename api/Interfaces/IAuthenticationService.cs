@@ -4,7 +4,7 @@ namespace api.Interfaces
 {
     public interface IAuthenticationService
     {
-        Task<NewUserDto> RegisterAsync(RegisterDto registerDto);
-        Task<UserDto> LoginAsync(LoginDto loginDto);
+        Task<Tokens> RegisterAsync(RegisterDto registerDto);
+        Task<string> LoginAsync(LoginDto loginDto);
     }
 }
