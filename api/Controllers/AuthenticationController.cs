@@ -6,16 +6,16 @@ using api.Exceptions;
 namespace api.Controllers
 {
     [Route("api/account")]
-    public class AccountController : ControllerBase
+    public class AuthenticationController : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly ILogger<AccountController> _logger;
+        private readonly IAuthenticationService _authService;
+        private readonly ILogger<AuthenticationController> _logger;
 
-        public AccountController(
-            IUserService userService,
-            ILogger<AccountController> logger)
+        public AuthenticationController(
+            IAuthenticationService authService,
+            ILogger<AuthenticationController> logger)
         {
-            _userService = userService;
+            _authService = authService;
             _logger = logger;
         }
 
@@ -34,7 +34,7 @@ namespace api.Controllers
                 throw new InvalidUserDataException(firstErrorMessage!);
             }
 
-            var user = await _userService.LoginAsync(loginDto);
+            var user = await _authService.LoginAsync(loginDto);
             _logger.LogInformation("Successful login for studentId {Id}", loginDto.StudentId);
             return Ok(user);
         }
@@ -54,7 +54,7 @@ namespace api.Controllers
                 throw new InvalidUserDataException(firstErrorMessage!);
             }
             
-            var newUser = await _userService.RegisterAsync(registerDto);
+            var newUser = await _authService.RegisterAsync(registerDto);
             _logger.LogInformation("Successful register for studentId{Id}", registerDto.StudentId);
             return Ok(newUser);
         }

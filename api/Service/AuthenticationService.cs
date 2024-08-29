@@ -5,25 +5,21 @@ using api.Exceptions;
 using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace api.Service;
 
-public class UserService : IUserService
+public class AuthenticationService : IAuthenticationService
 {
-    private readonly ApiDBContext _dbContext;
     private readonly IPasswordHasher<Student> _passwordHasher;
     private readonly IStudentRepository _studentRepo;
     private readonly ITokenService _tokenService;
-    private readonly ILogger<UserService> _logger;
+    private readonly ILogger<AuthenticationService> _logger;
 
-    public UserService(ApiDBContext dbContext,
-        IPasswordHasher<Student> passwordHasher,
+    public AuthenticationService(IPasswordHasher<Student> passwordHasher,
         IStudentRepository studentRepo,
         ITokenService tokenService,
-        ILogger<UserService> logger)
+        ILogger<AuthenticationService> logger)
     {
-        _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _studentRepo = studentRepo;
         _tokenService = tokenService;
