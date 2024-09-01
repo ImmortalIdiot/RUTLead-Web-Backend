@@ -26,7 +26,7 @@ public class TokenService : ITokenService {
         };
 
         if (!string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(user.FullName)) {
-            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+            claims.Add(new Claim("group", user.Group));
             claims.Add(new Claim(JwtRegisteredClaimNames.GivenName, user.FullName));
         } else {
             throw new InvalidUserDataException("Email or UserName is missing or empty.");

@@ -1,127 +1,62 @@
 using api.Interfaces;
-using api.Models;
 using api.Dto.Account;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using api.Data;
-using api.Enums;
+using api.Exceptions;
 
 namespace api.Controllers
 {
     [Route("api/account")]
-    [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly ApiDBContext dbContext;
-        private readonly ITokenService tokenService;
-        private readonly IStudentRepository studentManager;
-        private readonly IPasswordHasher<Student> passwordHasher;
-        private readonly ILogger<AccountController> logger;
+        private readonly IUserService _userService;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
-            ITokenService tokenService, 
-            IPasswordHasher<Student> passwordHasher, 
-            IStudentRepository studentManager, 
-            ApiDBContext dbContext, 
+            IUserService userService,
             ILogger<AccountController> logger)
         {
-            this.tokenService = tokenService;
-            this.passwordHasher = passwordHasher;
-            this.studentManager = studentManager;
-            this.dbContext = dbContext;
-            this.logger = logger;
+            _userService = userService;
+            _logger = logger;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
+            _logger.LogInformation("Attempt to login a user {Id}", loginDto.StudentId);
+            
             if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
+                var firstErrorMessage = ModelState
+                    .SelectMany(ms => ms.Value!.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .LastOrDefault();
+                
+                _logger.LogWarning("ModelState is invalid. Error: {firstErrorMessage}", firstErrorMessage);
+                throw new InvalidUserDataException(firstErrorMessage!);
             }
 
-            logger.LogInformation($"Attempt to login a user {loginDto.StudentId}");
-
-            var user = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == loginDto.StudentId);
-
-            if (user == null)
-            {
-                logger.LogWarning("User not found");
-                return NotFound("Incorrect student ID number");
-            }
-
-            var isPasswordHashValid = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
-
-            if (isPasswordHashValid != PasswordVerificationResult.Success)
-            {
-                logger.LogWarning("Fail to login user (password or username is incorrect)");
-                return NotFound("Incorrect username or password");
-            }
-
-            try {
-                logger.LogInformation($"Successful login for studentId {loginDto.StudentId}");
-                return Ok(
-                    new UserDto
-                    {
-                        StudentId = user.StudentId,
-                        Token = tokenService.CreateToken(user)
-                    }
-                );
-            } catch (Exception e) {
-                logger.LogError($"Thrown an exception for user {loginDto.StudentId} during login");
-                return BadRequest(e.Message);
-            }
+            var user = await _userService.LoginAsync(loginDto);
+            _logger.LogInformation("Successful login for studentId {Id}", loginDto.StudentId);
+            return Ok(user);
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            try
-            {
-                if (!ModelState.IsValid) {
-                    return BadRequest(ModelState);
-                }   
+            _logger.LogInformation("Attempt to register a user {Id}", registerDto.StudentId);
+            
+            if (!ModelState.IsValid) {
+                var firstErrorMessage = ModelState
+                    .SelectMany(ms => ms.Value!.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .LastOrDefault();
                 
-                logger.LogInformation($"Attempt to register a user {registerDto.StudentId}");
-                
-                var existingStudent = await dbContext.Students.FirstOrDefaultAsync(x => x.StudentId == registerDto.StudentId);
-
-                if (existingStudent != null) {
-                    logger.LogWarning("Attempt to register an existing user");
-                    return BadRequest("Such a user already exists");
-                }
-
-                var passwordHash = passwordHasher.HashPassword(null!, registerDto.Password);
-
-                var student = new Student
-                {
-                    StudentId = registerDto.StudentId,
-                    Group = registerDto.Group,
-                    FullName = registerDto.FullName,
-                    Email = registerDto.Email,
-                    PasswordHash = passwordHash,
-                    Role = Roles.Student
-                };
-
-                var createdUser = await studentManager.CreateAsync(student);
-
-                logger.LogInformation($"Successful register for studentId{registerDto.StudentId}");
-
-                return Ok(
-                    new NewUserDto
-                    {
-                        StudentId = registerDto.StudentId,
-                        Group = registerDto.Group,
-                        FullName = registerDto.FullName,
-                        Email = registerDto.Email,
-                        Token = tokenService.CreateToken(student)
-                    }
-                );
-            } catch (Exception e)
-            {
-                logger.LogError($"Thrown an exception for user {registerDto.StudentId} during register");
-                return BadRequest(e.Message);
+                _logger.LogWarning("ModelState is invalid. Error: {firstErrorMessage}", firstErrorMessage);
+                throw new InvalidUserDataException(firstErrorMessage!);
             }
+            
+            var newUser = await _userService.RegisterAsync(registerDto);
+            _logger.LogInformation("Successful register for studentId{Id}", registerDto.StudentId);
+            return Ok(newUser);
         }
     }
 }
